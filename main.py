@@ -18,21 +18,105 @@ app = FastAPI()
 
 # Pydantic model for DateInfo response
 class DateInfo(BaseModel):
+    """Response model for date information including holiday status."""
     date: str
     day_type: str  # 'workday', 'legal_holiday', or 'weekend'
     holiday_name: Optional[str] = None
+    
+    class Config:
+        json_schema_extra = {
+            "examples": [
+                {
+                    "date": "2024-01-01",
+                    "day_type": "legal_holiday",
+                    "holiday_name": "New Year's Day"
+                },
+                {
+                    "date": "2024-03-15",
+                    "day_type": "workday",
+                    "holiday_name": None
+                },
+                {
+                    "date": "2024-06-08",
+                    "day_type": "weekend",
+                    "holiday_name": None
+                }
+            ]
+        }
 
 
-@app.get("/today", response_model=DateInfo)
+@app.get(
+    "/today",
+    response_model=DateInfo,
+    summary="Get today's date information",
+    response_description="Information about today's date including holiday status",
+    responses={
+        200: {
+            "description": "Successfully retrieved date information",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "workday": {
+                            "summary": "Regular workday",
+                            "value": {
+                                "date": "2024-03-15",
+                                "day_type": "workday",
+                                "holiday_name": None
+                            }
+                        },
+                        "holiday": {
+                            "summary": "Legal holiday",
+                            "value": {
+                                "date": "2024-01-01",
+                                "day_type": "legal_holiday",
+                                "holiday_name": "New Year's Day"
+                            }
+                        },
+                        "weekend": {
+                            "summary": "Weekend day",
+                            "value": {
+                                "date": "2024-06-08",
+                                "day_type": "weekend",
+                                "holiday_name": None
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        404: {"description": "Date information not found"},
+        500: {"description": "Internal server error or unexpected API response"},
+        502: {"description": "Upstream holiday API unavailable"},
+        503: {"description": "Holiday API rate limit exceeded"}
+    }
+)
 async def get_today_info():
     """
     Get holiday information for today's date.
-    Returns date, day_type (workday/legal_holiday/weekend), and optional holiday_name.
     
-    The API type codes are mapped as follows:
-    - API type 0 (workday) or 3 (compensatory workday) -> 'workday'
-    - API type 1 (weekend) -> 'weekend'
-    - API type 2 (legal holiday) -> 'legal_holiday'
+    This endpoint fetches information about the current date and determines whether it's
+    a workday, weekend, or legal holiday. If it's a legal holiday, the holiday name
+    will be included in the response.
+    
+    ## Day Type Mapping
+    
+    The external API provides day type codes that are mapped as follows:
+    - **0** (workday) or **3** (compensatory workday) → `workday`
+    - **1** (weekend) → `weekend`
+    - **2** (legal holiday) → `legal_holiday`
+    
+    ## Response Fields
+    
+    - **date**: The current date in YYYY-MM-DD format
+    - **day_type**: One of "workday", "weekend", or "legal_holiday"
+    - **holiday_name**: The name of the holiday (only present for legal holidays)
+    
+    ## Error Handling
+    
+    - **404**: Date information not available
+    - **500**: Internal server error or invalid API response format
+    - **502**: Upstream holiday API is unreachable
+    - **503**: Rate limit exceeded for the holiday API
     """
     try:
         # Get today's date in YYYY-MM-DD format
@@ -150,10 +234,38 @@ async def get_today_info():
             )
 
 
-@app.get("/date-info", response_model=DateInfo)
+@app.get(
+    "/date-info",
+    response_model=DateInfo,
+    summary="Get today's date information (alias)",
+    response_description="Information about today's date including holiday status",
+    responses={
+        200: {
+            "description": "Successfully retrieved date information",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "date": "2024-03-15",
+                        "day_type": "workday",
+                        "holiday_name": None
+                    }
+                }
+            }
+        },
+        404: {"description": "Date information not found"},
+        500: {"description": "Internal server error or unexpected API response"},
+        502: {"description": "Upstream holiday API unavailable"},
+        503: {"description": "Holiday API rate limit exceeded"}
+    }
+)
 async def get_date_info_alias():
     """
-    Alias for /today endpoint.
-    Get holiday information for today's date.
+    Alias endpoint for /today.
+    
+    This endpoint provides the same functionality as `/today` and returns
+    holiday information for the current date. Use either endpoint based on
+    your preference.
+    
+    See `/today` for detailed documentation about response fields and error handling.
     """
     return await get_today_info()
