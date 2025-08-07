@@ -16,7 +16,10 @@ This is a simple FastAPI application with:
 - **Current routes**:
   - `GET /` - returns `{"Hello": "World"}`
   - `GET /items/{item_id}` - returns item with optional query parameter `q`
-- **Dependencies**: FastAPI 0.116.1+, uvicorn 0.35.0+
+- **Dependencies**: 
+  - FastAPI 0.116.1+ (web framework)
+  - uvicorn 0.35.0+ (ASGI server)
+  - httpx 0.27.0+ (async-compatible HTTP client for making external API calls)
 - **Python**: Requires Python 3.13+
 
 ## Project Setup
